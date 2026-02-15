@@ -216,8 +216,9 @@
 
   .qr-preview-wrap {
     display: inline-block;
-    padding: 16px;
+    padding: 8px;
     background: white;
+    border: 2px solid #000;
     border-radius: var(--radius);
     margin-bottom: 16px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
@@ -442,14 +443,15 @@
     canvas.width = QR_SIZE;
     canvas.height = QR_SIZE;
     const c = canvas.getContext('2d');
-    const scale = QR_SIZE / (qrSize + 8);
+    const quiet = 2;
+    const scale = QR_SIZE / (qrSize + quiet * 2);
     if (transparent) c.clearRect(0, 0, QR_SIZE, QR_SIZE);
     else { c.fillStyle = '#ffffff'; c.fillRect(0, 0, QR_SIZE, QR_SIZE); }
     c.fillStyle = color;
     for (let y = 0; y < qrSize; y++)
       for (let x = 0; x < qrSize; x++)
         if (modules[y][x])
-          c.fillRect(Math.round((x + 4) * scale), Math.round((y + 4) * scale), Math.ceil(scale), Math.ceil(scale));
+          c.fillRect(Math.round((x + quiet) * scale), Math.round((y + quiet) * scale), Math.ceil(scale), Math.ceil(scale));
   }
 
   function renderQR(qrData, color) {
