@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRDiggy — Dead Simple QR Codes</title>
+<meta name="description" content="Free QR code generator. No signup. No nonsense. Just paste a URL and get your QR code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #141418;
+    --surface-hover: #1c1c22;
+    --border: #2a2a32;
+    --text: #e8e8ec;
+    --text-dim: #8888a0;
+    --accent: #f0c040;
+    --accent-glow: rgba(240, 192, 64, 0.15);
+    --accent-hover: #f5d060;
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(240, 192, 64, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 192, 64, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    padding: 24px 20px 48px;
+  }
+
+  .header {
+    text-align: center;
+    padding: 48px 0 40px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-top: 8px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+
+  .input-section:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+
+  .input-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .url-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .url-input::placeholder { color: #555566; }
+
+  .url-input:focus {
+    border-color: var(--accent);
+    background: #0d0d10;
+  }
+
+  .options-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .option-group { flex: 1; }
+
+  .option-group label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .color-picker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+  }
+
+  .color-picker-wrap input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+  }
+
+  .color-picker-wrap input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-picker-wrap input[type="color"]::-webkit-color-swatch {
+    border: 2px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .color-hex {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .btn-generate {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 24px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-generate:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+
+  .btn-generate:active { transform: translateY(0); }
+
+  /* ── OUTPUT ── */
+  .output-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px 24px;
+    text-align: center;
+    display: none;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .output-section.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .qr-preview-wrap {
+    display: inline-block;
+    padding: 16px;
+    background: white;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  /* Full-res canvas is hidden; we show a scaled-down preview */
+  #qrCanvas {
+    display: none;
+  }
+
+  .qr-preview-wrap img {
+    display: block;
+    width: 180px;
+    height: 180px;
+    image-rendering: pixelated;
+  }
+
+  .qr-url-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    word-break: break-all;
+    padding: 0 12px;
+  }
+
+  .btn-row { display: flex; gap: 10px; }
+
+  .btn-download {
+    flex: 1;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-download:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-transparent {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-transparent:hover {
+    background: var(--surface-hover);
+    border-color: var(--text-dim);
+  }
+
+  .footer {
+    text-align: center;
+    padding: 40px 0 24px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  .footer .pricing-nudge {
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .footer .pricing-nudge strong { color: var(--accent); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    .container { padding: 16px 16px 32px; }
+    .header { padding: 32px 0 28px; }
+    .logo { font-size: 1.6rem; }
+    .btn-row { flex-direction: column; }
+    .qr-preview-wrap img { width: 150px; height: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="header">
+    <div class="logo">QR<span>Diggy</span></div>
+    <p class="tagline">Dead simple QR codes. Free. No signup.</p>
+  </header>
+
+  <section class="input-section">
+    <span class="input-label">Paste your URL</span>
+    <input 
+      type="url" 
+      class="url-input" 
+      id="urlInput" 
+      placeholder="https://your-link-here.com"
+      autocomplete="off"
+      spellcheck="false"
+    >
+
+    <div class="options-row">
+      <div class="option-group">
+        <label>QR Color</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="colorPicker" value="#000000">
+          <span class="color-hex" id="colorHex">#000000</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate">Generate QR Code</button>
+  </section>
+
+  <!-- Hidden full-res canvas for downloads -->
+  <canvas id="qrCanvas" width="512" height="512"></canvas>
+
+  <section class="output-section" id="outputSection">
+    <div class="qr-preview-wrap">
+      <img id="qrPreview" alt="QR Code" />
+    </div>
+    <p class="qr-url-display" id="qrUrlDisplay"></p>
+    <div class="btn-row">
+      <button class="btn-download" id="btnDownloadPng">↓ Download PNG</button>
+      <button class="btn-transparent" id="btnDownloadTransparent">↓ Transparent</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Built with ☕ by <a href="#">QRDiggy</a></p>
+    <div class="pricing-nudge">
+      Need to <strong>update your QR codes</strong> after printing?<br>
+      Dynamic QR codes — <strong>$5/mo for 10 codes</strong>. No tiers. No BS.<br>
+      <em>Coming soon.</em>
+    </div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Self-contained QR Code encoder (no external libraries) ──
+  const QR = (() => {
+    const EC_CODEWORDS = [
+      null,17,28,22,16,22,28,26,26,24,28,24,28,22,24,24,30,28,28,26,28,
+      30,24,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30
+    ];
+    const EC_BLOCKS = [
+      null,1,1,2,4,4,4,5,6,8,8,11,11,16,16,18,16,19,21,25,25,
+      25,34,30,32,35,37,40,42,45,48,51,54,58,62,65,68,72,78,82,86
+    ];
+
+    const GF_EXP = new Uint8Array(512);
+    const GF_LOG = new Uint8Array(256);
+    (() => {
+      let x = 1;
+      for (let i = 0; i < 255; i++) {
+        GF_EXP[i] = x; GF_LOG[x] = i;
+        x = (x << 1) ^ (x >= 128 ? 0x11d : 0);
+      }
+      for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+    })();
+
+    function gfMul(a, b) { return (a === 0 || b === 0) ? 0 : GF_EXP[GF_LOG[a] + GF_LOG[b]]; }
+
+    function rsEncode(data, numEc) {
+      const gen = new Uint8Array(numEc + 1); gen[0] = 1;
+      for (let i = 0; i < numEc; i++)
+        for (let j = i + 1; j >= 1; j--)
+          gen[j] = gen[j] ^ gfMul(gen[j - 1], GF_EXP[i]);
+      const result = new Uint8Array(numEc);
+      for (let i = 0; i < data.length; i++) {
+        const f = data[i] ^ result[0];
+        result.copyWithin(0, 1); result[numEc - 1] = 0;
+        for (let j = 0; j < numEc; j++) result[j] ^= gfMul(gen[numEc - j], f);
+      }
+      return result;
+    }
+
+    function getNumRaw(v) {
+      let r = (16 * v + 128) * v + 64;
+      if (v >= 2) { const n = Math.floor(v / 7) + 2; r -= (25 * n - 10) * n - 55; if (v >= 7) r -= 36; }
+      return r;
+    }
+
+    function getDataCW(v) { return Math.floor(getNumRaw(v) / 8) - EC_BLOCKS[v] * EC_CODEWORDS[v]; }
+
+    function bestVer(len) {
+      for (let v = 1; v <= 40; v++) {
+        const cb = v <= 9 ? 8 : 16;
+        if (len <= Math.floor((getDataCW(v) * 8 - 4 - cb) / 8)) return v;
+      }
+      throw new Error('Too long');
+    }
+
+    function generate(text) {
+      const data = new TextEncoder().encode(text);
+      const ver = bestVer(data.length);
+      const size = ver * 4 + 17;
+      const totalData = getDataCW(ver);
+      const cb = ver <= 9 ? 8 : 16;
+      const bits = [];
+
+      function push(val, len) { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+      push(4, 4); push(data.length, cb);
+      for (const b of data) push(b, 8);
+      push(0, Math.min(4, totalData * 8 - bits.length));
+      while (bits.length % 8) bits.push(0);
+      let pad = true;
+      while (bits.length < totalData * 8) { push(pad ? 0xEC : 0x11, 8); pad = !pad; }
+
+      const cw = new Uint8Array(totalData);
+      for (let i = 0; i < totalData; i++) { let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i * 8 + j]; cw[i] = v; }
+
+      const nBlk = EC_BLOCKS[ver], ecPB = EC_CODEWORDS[ver];
+      const shortLen = Math.floor(totalData / nBlk), longBlks = totalData % nBlk;
+      const dBlks = [], eBlks = [];
+      let off = 0;
+      for (let i = 0; i < nBlk; i++) {
+        const len = shortLen + (i >= nBlk - longBlks ? 1 : 0);
+        const blk = cw.slice(off, off + len); dBlks.push(blk); eBlks.push(rsEncode(blk, ecPB)); off += len;
+      }
+
+      const interleaved = [];
+      for (let i = 0; i <= shortLen; i++) for (const b of dBlks) if (i < b.length) interleaved.push(b[i]);
+      for (let i = 0; i < ecPB; i++) for (const b of eBlks) interleaved.push(b[i]);
+
+      const mod = Array.from({ length: size }, () => new Uint8Array(size));
+      const isF = Array.from({ length: size }, () => new Uint8Array(size));
+
+      function finder(cx, cy) {
+        for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+          const x = cx + dx, y = cy + dy;
+          if (x < 0 || x >= size || y < 0 || y >= size) continue;
+          const ax = Math.abs(dx), ay = Math.abs(dy);
+          const dark = Math.max(ax, ay) <= 3 && !(ax === 2 && ay <= 2) && !(ay === 2 && ax <= 2) || (ax <= 1 && ay <= 1);
+          mod[y][x] = (dark && ax < 4 && ay < 4) ? 1 : 0; isF[y][x] = 1;
+        }
+      }
+      finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+
+      if (ver >= 2) {
+        const pos = [6]; const nA = Math.floor(ver / 7) + 2;
+        const step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (nA * 2 - 2)) * 2;
+        let p = size - 7; for (let i = nA - 2; i >= 1; i--) { pos.splice(1, 0, p); p -= step; }
+        pos.push(size - 7);
+        for (const cy of pos) for (const cx of pos) {
+          if ((cx <= 8 && cy <= 8) || (cx <= 8 && cy >= size - 9) || (cx >= size - 9 && cy <= 8)) continue;
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+            mod[cy + dy][cx + dx] = (Math.abs(dx) === 2 || Math.abs(dy) === 2 || (!dx && !dy)) ? 1 : 0;
+            isF[cy + dy][cx + dx] = 1;
+          }
+        }
+      }
+
+      for (let i = 8; i < size - 8; i++) { mod[6][i] = mod[i][6] = (i % 2 === 0) ? 1 : 0; isF[6][i] = isF[i][6] = 1; }
+      mod[size - 8][8] = 1; isF[size - 8][8] = 1;
+
+      for (let i = 0; i < 9; i++) { isF[8][i] = isF[i][8] = 1; if (i < 8) { isF[8][size - 1 - i] = 1; isF[size - 1 - i][8] = 1; } else { isF[8][size - 1 - 0] = 1; } }
+      if (ver >= 7) for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) { isF[i][size - 11 + j] = isF[size - 11 + j][i] = 1; }
+
+      const allBits = [];
+      for (const byte of interleaved) for (let i = 7; i >= 0; i--) allBits.push((byte >> i) & 1);
+      let bi = 0;
+      for (let right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+          const x = right - j, upward = ((right + 1) & 2) === 0, y = upward ? size - 1 - vert : vert;
+          if (!isF[y][x]) mod[y][x] = bi < allBits.length ? allBits[bi++] : 0;
+        }
+      }
+
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!isF[y][x] && (x + y) % 2 === 0) mod[y][x] ^= 1;
+
+      const FMT = 0x5412;
+      for (let i = 0; i < 15; i++) {
+        const b = (FMT >> i) & 1;
+        if (i < 6) mod[8][i] = b; else if (i < 8) mod[8][i + 1] = b; else mod[14 - i][8] = b;
+        if (i < 8) mod[size - 1 - i][8] = b; else mod[8][size - 15 + i] = b;
+      }
+
+      if (ver >= 7) {
+        let rem = ver; for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >> 11) * 0x1F25);
+        const vb = (ver << 12) | rem;
+        for (let i = 0; i < 18; i++) { const b = (vb >> i) & 1, a = Math.floor(i / 3), c = i % 3 + size - 11; mod[a][c] = mod[c][a] = b; }
+      }
+
+      return { modules: mod, size };
+    }
+
+    return { generate };
+  })();
+
+  // ── APP ──
+  const QR_SIZE = 512;
+  const urlInput = document.getElementById('urlInput');
+  const btnGenerate = document.getElementById('btnGenerate');
+  const outputSection = document.getElementById('outputSection');
+  const qrUrlDisplay = document.getElementById('qrUrlDisplay');
+  const colorPicker = document.getElementById('colorPicker');
+  const colorHex = document.getElementById('colorHex');
+  const qrCanvas = document.getElementById('qrCanvas');
+  const qrPreview = document.getElementById('qrPreview');
+  const ctx = qrCanvas.getContext('2d');
+
+  let currentUrl = '';
+  let currentColor = '#000000';
+  let currentModules = null;
+
+  colorPicker.addEventListener('input', (e) => {
+    colorHex.textContent = e.target.value.toUpperCase();
+    currentColor = e.target.value;
+    if (currentModules) renderQR(currentModules, currentColor);
+  });
+
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnGenerate.click(); });
+  urlInput.focus();
+
+  btnGenerate.addEventListener('click', () => {
+    let url = urlInput.value.trim();
+    if (!url) { showToast('Paste a URL first!'); urlInput.focus(); return; }
+    if (!/^https?:\/\//i.test(url)) { url = 'https://' + url; urlInput.value = url; }
+    currentUrl = url;
+    try {
+      currentModules = QR.generate(url);
+      renderQR(currentModules, currentColor);
+      qrUrlDisplay.textContent = url;
+      outputSection.classList.add('visible');
+      setTimeout(() => outputSection.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    } catch (e) { showToast('URL too long — try a shorter one'); }
+  });
+
+  function drawToCanvas(canvas, { modules, size: qrSize }, color, transparent) {
+    canvas.width = QR_SIZE;
+    canvas.height = QR_SIZE;
+    const c = canvas.getContext('2d');
+    const scale = QR_SIZE / (qrSize + 8);
+    if (transparent) c.clearRect(0, 0, QR_SIZE, QR_SIZE);
+    else { c.fillStyle = '#ffffff'; c.fillRect(0, 0, QR_SIZE, QR_SIZE); }
+    c.fillStyle = color;
+    for (let y = 0; y < qrSize; y++)
+      for (let x = 0; x < qrSize; x++)
+        if (modules[y][x])
+          c.fillRect(Math.round((x + 4) * scale), Math.round((y + 4) * scale), Math.ceil(scale), Math.ceil(scale));
+  }
+
+  function renderQR(qrData, color) {
+    drawToCanvas(qrCanvas, qrData, color, false);
+    qrPreview.src = qrCanvas.toDataURL('image/png');
+  }
+
+  function downloadFile(canvas, suffix) {
+    const slug = currentUrl.replace(/https?:\/\//, '').replace(/[^a-z0-9]/gi, '-').substring(0, 30);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'qrdiggy-' + slug + suffix + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  document.getElementById('btnDownloadPng').addEventListener('click', () => {
+    if (!currentModules) return;
+    drawToCanvas(qrCanvas, currentModules, currentColor, false);
+    downloadFile(qrCanvas, '');
+    showToast('PNG downloaded!');
+  });
+
+  document.getElementById('btnDownloadTransparent').addEventListener('click', () => {
+    if (!currentModules) return;
+    const tmp = document.createElement('canvas');
+    drawToCanvas(tmp, currentModules, currentColor, true);
+    downloadFile(tmp, '-transparent');
+    showToast('Transparent PNG downloaded!');
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+
+</body>
+</html>
